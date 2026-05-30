@@ -122,20 +122,36 @@ export default function RecipeCatalog() {
   // Category label for current language
   const catLabel = (recipe) => lang === 'de' ? recipe.de?.category : recipe.fr?.category
 
-  const callClaude = async (prompt) => {
+  const callClaude = async (prompt, useSearch = false) => {
+    const body = {
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      system: 'You are a multilingual culinary editor. You MUST respond with ONLY a valid JSON object. No markdown, no explanation, no text before or after the JSON. Start your response with { and end with }.',
+      messages: [{ role: 'user', content: prompt }],
+    }
+    if (useSearch) body.tools = [{ type: 'web_search_20250305', name: 'web_search' }]
     const res = await fetch('/api/claude', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: 'Du bist ein mehrsprachiger Kochredakteur. Antworte NUR mit gültigem JSON ohne Markdown.',
-        messages: [{ role: 'user', content: prompt }],
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-      }),
+      body: JSON.stringify(body),
     })
     const data = await res.json()
-    return data.content?.filter(b => b.type==='text').map(b => b.text).join('\n') || ''
+    return data.content?.filter(b => b.type === 'text').map(b => b.text).join('\n') || ''
+  }
+
+  const parseJSON = (text) => {
+    // Try direct parse first
+    try { return JSON.parse(text.trim()) } catch {}
+    // Strip markdown fences
+    const stripped = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
+    try { return JSON.parse(stripped) } catch {}
+    // Extract first {...} block
+    const match = stripped.match(/\{[\s\S]*\}/)
+    if (match) { try { return JSON.parse(match[0]) } catch {} }
+    // Try to find the last complete JSON object
+    const matches = [...stripped.matchAll(/\{[\s\S]*?\}/g)]
+    for (const m of matches.reverse()) { try { const p = JSON.parse(m[0]); if (p.de && p.fr) return p } catch {} }
+    return null
   }
 
   const publishOneRecipe = async () => {
@@ -146,49 +162,40 @@ export default function RecipeCatalog() {
     setStatus(topic.query)
 
     try {
-      const rawText = await callClaude(`
-Search the web for a recipe about: "${topic.query}".
-Then write a unique rewritten version of this recipe in BOTH German AND French.
-
-Return ONLY this JSON object (no markdown, no explanation):
-{
-  "de": {
-    "title": "Dish name in German",
-    "description": "Appetizing description in German (2-3 sentences)",
-    "ingredients": ["ingredient with amount in German"],
-    "steps": ["Step 1 in German", "Step 2 in German"],
-    "time": "Preparation time in German (e.g. 45 Minuten)",
-    "servings": "Servings in German (e.g. 4 Portionen)",
-    "difficulty": "Leicht or Mittel or Schwer",
-    "tip": "Chef tip in German",
-    "category": "${topic.de}"
-  },
-  "fr": {
-    "title": "Dish name in French",
-    "description": "Appetizing description in French (2-3 sentences)",
-    "ingredients": ["ingredient with amount in French"],
-    "steps": ["Étape 1 en français", "Étape 2 en français"],
-    "time": "Temps de préparation en français (e.g. 45 minutes)",
-    "servings": "Portions en français (e.g. 4 portions)",
-    "difficulty": "Facile or Moyen or Difficile",
-    "tip": "Conseil du chef en français",
-    "category": "${topic.fr}"
-  }
-}`)
+      // Step 1: search for recipe info
+      const searchText = await callClaude(
+        `Search the web for a recipe about: "${topic.query}". Find the ingredients and preparation steps. Return a brief summary of what you found including: dish name, main ingredients list, and cooking steps.`,
+        true
+      )
 
       addLog('✍️ Übersetze / Traduction...', 'rewrite')
+      setStatus('Generiere Rezept / Génération recette...')
 
-      let data
-      try {
-        const clean = rawText.replace(/```json|```/g, '').trim()
-        const match = clean.match(/\{[\s\S]*\}/)
-        data = JSON.parse(match ? match[0] : clean)
-      } catch {
+      // Step 2: generate bilingual JSON from search results (no web search needed)
+      const rawText = await callClaude(`
+Based on this recipe information:
+${searchText.slice(0, 1500)}
+
+Write a complete bilingual recipe in German and French. Return ONLY this JSON (nothing else, no markdown):
+{"de":{"title":"Dish name in German","description":"2-3 sentence description in German","ingredients":["200g Butter","3 Eier","100ml Milch"],"steps":["Schritt 1 beschreibung","Schritt 2 beschreibung","Schritt 3 beschreibung"],"time":"45 Minuten","servings":"4 Portionen","difficulty":"Mittel","tip":"Ein nützlicher Tipp auf Deutsch","category":"${topic.de}"},"fr":{"title":"Dish name in French","description":"Description en 2-3 phrases en français","ingredients":["200g de beurre","3 oeufs","100ml de lait"],"steps":["Étape 1 description","Étape 2 description","Étape 3 description"],"time":"45 minutes","servings":"4 portions","difficulty":"Moyen","tip":"Un conseil utile en français","category":"${topic.fr}"}}`,
+        false
+      )
+
+      let data = parseJSON(rawText)
+
+      if (!data || !data.de || !data.fr) {
+        // Fallback with proper structure
         data = {
-          de: { title: topic.query, description: 'Ein klassisches Gericht.', ingredients: ['Zutaten'], steps: ['Zubereiten.'], time: '40 Minuten', servings: '4 Portionen', difficulty: 'Mittel', tip: 'Frische Zutaten.', category: topic.de },
-          fr: { title: topic.query, description: 'Un plat classique.', ingredients: ['Ingrédients'], steps: ['Préparer.'], time: '40 minutes', servings: '4 portions', difficulty: 'Moyen', tip: 'Ingrédients frais.', category: topic.fr },
+          de: { title: topic.query, description: 'Ein klassisches Gericht mit reichem Geschmack und einfacher Zubereitung.', ingredients: ['500g Hauptzutat', '2 Zwiebeln', '3 Knoblauchzehen', 'Salz und Pfeffer', 'Olivenöl'], steps: ['Alle Zutaten vorbereiten und waschen.', 'Die Zwiebeln und den Knoblauch fein hacken.', 'In einem Topf mit Olivenöl anbraten.', 'Die Hauptzutat hinzufügen und 20 Minuten köcheln lassen.', 'Mit Salz und Pfeffer abschmecken und servieren.'], time: '45 Minuten', servings: '4 Portionen', difficulty: 'Mittel', tip: 'Frische, hochwertige Zutaten machen den Unterschied.', category: topic.de },
+          fr: { title: topic.query, description: 'Un plat classique avec une saveur riche et une préparation simple.', ingredients: ['500g ingrédient principal', '2 oignons', '3 gousses d\'ail', 'Sel et poivre', 'Huile d\'olive'], steps: ['Préparer et laver tous les ingrédients.', 'Émincer finement les oignons et l\'ail.', 'Faire revenir dans une casserole avec l\'huile d\'olive.', 'Ajouter l\'ingrédient principal et laisser mijoter 20 minutes.', 'Assaisonner avec du sel et du poivre, puis servir.'], time: '45 minutes', servings: '4 portions', difficulty: 'Moyen', tip: 'Des ingrédients frais et de qualité font toute la différence.', category: topic.fr },
         }
       }
+
+      // Ensure arrays exist
+      if (!Array.isArray(data.de?.ingredients)) data.de.ingredients = ['Zutaten nach Rezept']
+      if (!Array.isArray(data.de?.steps)) data.de.steps = ['Nach klassischer Methode zubereiten.']
+      if (!Array.isArray(data.fr?.ingredients)) data.fr.ingredients = ['Ingrédients selon la recette']
+      if (!Array.isArray(data.fr?.steps)) data.fr.steps = ['Préparer selon la méthode classique.']
 
       const newRecipe = {
         id: Date.now(),
