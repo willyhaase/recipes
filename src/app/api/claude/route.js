@@ -8,7 +8,7 @@ export async function POST(request) {
       'anthropic-version': '2023-06-01',
       'anthropic-beta': 'web-search-2025-03-05',
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ ...body, max_tokens: body.max_tokens || 2000 }),
   })
   const data = await response.json()
   return Response.json(data)
