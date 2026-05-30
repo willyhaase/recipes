@@ -1,71 +1,70 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 
-// ─── UI TRANSLATIONS (interface only) ────────────────────────────────────────
 const UI = {
   de: {
-    siteName: 'GourmetWelt',
-    tagline: 'Kulinarischer Rezeptkatalog',
+    siteName: 'Gourmondo',
+    tagline: 'Rezepte entdecken',
     searchPlaceholder: 'Rezept suchen...',
-    allCat: 'Alle',
+    allCat: 'Alle Rezepte',
     categories: ['Frühstück','Suppen','Salate','Hauptgerichte','Backen','Desserts','Getränke','Vorspeisen'],
-    autoPublish: '▶ Autopublizierung',
-    stop: '⏹ Stopp',
-    panel: '⚙ Steuerung',
+    catIcons: ['☀️','🍲','🥗','🍽️','🥐','🍮','🥂','🫙'],
+    autoPublish: 'Autopublizierung starten',
+    stop: 'Stopp',
+    panel: 'Steuerung',
     hidePanel: 'Ausblenden',
     recipes: 'Rezepte',
-    publishOne: '+ Ein Rezept',
-    loading: '⏳ Lädt...',
-    waiting: 'Warten...',
+    publishOne: 'Ein Rezept hinzufügen',
+    loading: 'Wird geladen...',
+    waiting: 'Bereit',
     active: 'Aktiv',
     management: 'Steuerung',
-    logEmpty: 'Log leer. Starten Sie die Autopublizierung.',
+    logEmpty: 'Starten Sie die Autopublizierung.',
     noRecipes: 'Noch keine Rezepte',
-    noRecipesHint: 'Klicken Sie auf «Autopublizierung»',
-    noResults: 'Nichts gefunden',
-    noResultsHint: 'Versuchen Sie eine andere Suchanfrage',
+    noRecipesHint: 'Starten Sie die Autopublizierung, um Rezepte zu entdecken',
+    noResults: 'Keine Ergebnisse',
+    noResultsHint: 'Versuchen Sie einen anderen Suchbegriff',
     ingredients: 'Zutaten',
     preparation: 'Zubereitung',
-    chefTip: '💡 Küchentipp',
+    chefTip: 'Küchentipp',
     publishedLabel: 'Veröffentlicht:',
+    min: 'Min.',
+    portions: 'Port.',
     locale: 'de-DE',
+    difficulty: { Leicht: 'Leicht', Mittel: 'Mittel', Schwer: 'Schwer' },
   },
   fr: {
-    siteName: 'GourmetMonde',
-    tagline: 'Catalogue de recettes culinaires',
+    siteName: 'Gourmondo',
+    tagline: 'Découvrir des recettes',
     searchPlaceholder: 'Rechercher une recette...',
-    allCat: 'Tout',
+    allCat: 'Toutes les recettes',
     categories: ['Petit-déjeuner','Soupes','Salades','Plats principaux','Pâtisserie','Desserts','Boissons','Entrées'],
-    autoPublish: '▶ Autopublication',
-    stop: '⏹ Arrêter',
-    panel: '⚙ Panneau',
+    catIcons: ['☀️','🍲','🥗','🍽️','🥐','🍮','🥂','🫙'],
+    autoPublish: 'Démarrer l\'autopublication',
+    stop: 'Arrêter',
+    panel: 'Panneau',
     hidePanel: 'Masquer',
     recipes: 'recettes',
-    publishOne: '+ Une recette',
-    loading: '⏳ Chargement...',
-    waiting: 'En attente...',
+    publishOne: 'Ajouter une recette',
+    loading: 'Chargement...',
+    waiting: 'Prêt',
     active: 'Actif',
     management: 'Gestion',
-    logEmpty: "Journal vide. Démarrez l'autopublication.",
+    logEmpty: "Démarrez l'autopublication.",
     noRecipes: 'Pas encore de recettes',
-    noRecipesHint: "Cliquez sur «Autopublication»",
-    noResults: 'Rien trouvé',
-    noResultsHint: 'Essayez une autre recherche',
+    noRecipesHint: "Démarrez l'autopublication pour découvrir des recettes",
+    noResults: 'Aucun résultat',
+    noResultsHint: 'Essayez un autre terme de recherche',
     ingredients: 'Ingrédients',
     preparation: 'Préparation',
-    chefTip: '💡 Conseil du chef',
+    chefTip: 'Conseil du chef',
     publishedLabel: 'Publié le :',
+    min: 'min.',
+    portions: 'pers.',
     locale: 'fr-FR',
+    difficulty: { Leicht: 'Facile', Mittel: 'Moyen', Schwer: 'Difficile' },
   },
 }
-
-// Category mapping DE → FR
-const CAT_MAP = {
-  'Frühstück': 'Petit-déjeuner', 'Suppen': 'Soupes', 'Salate': 'Salades',
-  'Hauptgerichte': 'Plats principaux', 'Backen': 'Pâtisserie', 'Desserts': 'Desserts',
-  'Getränke': 'Boissons', 'Vorspeisen': 'Entrées',
-}
-const CAT_MAP_FR = Object.fromEntries(Object.entries(CAT_MAP).map(([k,v]) => [v,k]))
 
 const TOPICS = [
   { query: 'French onion soup recipe', de: 'Suppen', fr: 'Soupes' },
@@ -83,21 +82,38 @@ const TOPICS = [
   { query: 'Flammkuchen Tarte flambée recipe', de: 'Vorspeisen', fr: 'Entrées' },
   { query: 'Mousse au chocolat recipe', de: 'Desserts', fr: 'Desserts' },
   { query: 'Käsespätzle recipe', de: 'Hauptgerichte', fr: 'Plats principaux' },
-  { query: 'Croissants recipe', de: 'Backen', fr: 'Pâtisserie' },
+  { query: 'Croissants maison recipe', de: 'Backen', fr: 'Pâtisserie' },
   { query: 'Sauerbraten recipe', de: 'Hauptgerichte', fr: 'Plats principaux' },
   { query: 'Coq au vin recipe', de: 'Hauptgerichte', fr: 'Plats principaux' },
+  { query: 'Eggs Benedict brunch recipe', de: 'Frühstück', fr: 'Petit-déjeuner' },
+  { query: 'Caesar salad recipe', de: 'Salate', fr: 'Salades' },
 ]
 
-const COLORS = ['#c0392b','#e67e22','#27ae60','#2980b9','#8e44ad','#16a085','#d35400','#34495e']
-const genColor = (s) => { let h=0; for(let i=0;i<s.length;i++) h=s.charCodeAt(i)+((h<<5)-h); return COLORS[Math.abs(h)%COLORS.length] }
-const fmtDate = (d, locale) => new Intl.DateTimeFormat(locale,{day:'numeric',month:'long',year:'numeric'}).format(new Date(d))
+// Food-themed gradient backgrounds (no real photos needed)
+const CARD_THEMES = [
+  { bg: 'linear-gradient(145deg, #f4a261 0%, #e76f51 100%)', text: '#fff' },
+  { bg: 'linear-gradient(145deg, #457b9d 0%, #1d3557 100%)', text: '#fff' },
+  { bg: 'linear-gradient(145deg, #6a994e 0%, #386641 100%)', text: '#fff' },
+  { bg: 'linear-gradient(145deg, #e9c46a 0%, #f4a261 100%)', text: '#2d2d2d' },
+  { bg: 'linear-gradient(145deg, #9c6644 0%, #7f4f24 100%)', text: '#fff' },
+  { bg: 'linear-gradient(145deg, #b7b7a4 0%, #6b705c 100%)', text: '#fff' },
+  { bg: 'linear-gradient(145deg, #e07a5f 0%, #c1440e 100%)', text: '#fff' },
+  { bg: 'linear-gradient(145deg, #3d405b 0%, #202040 100%)', text: '#fff' },
+  { bg: 'linear-gradient(145deg, #8ecae6 0%, #219ebc 100%)', text: '#fff' },
+  { bg: 'linear-gradient(145deg, #a8dadc 0%, #457b9d 100%)', text: '#fff' },
+]
 
-// ─── COMPONENT ────────────────────────────────────────────────────────────────
+const FOOD_EMOJIS = ['🥘','🍲','🥗','🍝','🍜','🥩','🍰','🥐','🫕','🍱','🥞','🍳','🥙','🫔','🥧']
+
+const genTheme = (s) => { let h=0; for(let i=0;i<s.length;i++) h=s.charCodeAt(i)+((h<<5)-h); return CARD_THEMES[Math.abs(h)%CARD_THEMES.length] }
+const genEmoji = (s) => { let h=0; for(let i=0;i<s.length;i++) h=s.charCodeAt(i)+((h<<5)-h); return FOOD_EMOJIS[Math.abs(h)%FOOD_EMOJIS.length] }
+const fmtDate = (d, locale) => new Intl.DateTimeFormat(locale,{day:'numeric',month:'long'}).format(new Date(d))
+
 export default function RecipeCatalog() {
   const [lang, setLang] = useState('de')
   const ui = UI[lang]
 
-  const [recipes, setRecipes] = useState([])       // each recipe has .de and .fr fields
+  const [recipes, setRecipes] = useState([])
   const [activeCat, setActiveCat] = useState('ALL')
   const [searchQuery, setSearchQuery] = useState('')
   const [selected, setSelected] = useState(null)
@@ -106,6 +122,7 @@ export default function RecipeCatalog() {
   const [status, setStatus] = useState('')
   const [showPanel, setShowPanel] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [searchFocused, setSearchFocused] = useState(false)
   const intervalRef = useRef(null)
   const logRef = useRef(null)
 
@@ -115,12 +132,7 @@ export default function RecipeCatalog() {
   }
 
   const switchLang = (l) => { setLang(l); setActiveCat('ALL'); setSearchQuery('') }
-
-  // Current language version of a recipe
   const r = (recipe) => recipe?.[lang] || {}
-
-  // Category label for current language
-  const catLabel = (recipe) => lang === 'de' ? recipe.de?.category : recipe.fr?.category
 
   const callClaude = async (prompt, useSearch = false) => {
     const body = {
@@ -140,17 +152,11 @@ export default function RecipeCatalog() {
   }
 
   const parseJSON = (text) => {
-    // Try direct parse first
     try { return JSON.parse(text.trim()) } catch {}
-    // Strip markdown fences
     const stripped = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim()
     try { return JSON.parse(stripped) } catch {}
-    // Extract first {...} block
     const match = stripped.match(/\{[\s\S]*\}/)
     if (match) { try { return JSON.parse(match[0]) } catch {} }
-    // Try to find the last complete JSON object
-    const matches = [...stripped.matchAll(/\{[\s\S]*?\}/g)]
-    for (const m of matches.reverse()) { try { const p = JSON.parse(m[0]); if (p.de && p.fr) return p } catch {} }
     return null
   }
 
@@ -158,40 +164,28 @@ export default function RecipeCatalog() {
     if (loading) return
     const topic = TOPICS[Math.floor(Math.random() * TOPICS.length)]
     setLoading(true)
-    addLog(`🔍 Suche / Recherche: «${topic.query}»...`, 'search')
+    addLog(`🔍 ${topic.query}...`, 'search')
     setStatus(topic.query)
-
     try {
-      // Step 1: search for recipe info
       const searchText = await callClaude(
-        `Search the web for a recipe about: "${topic.query}". Find the ingredients and preparation steps. Return a brief summary of what you found including: dish name, main ingredients list, and cooking steps.`,
+        `Search the web for a recipe about: "${topic.query}". Return a brief summary with dish name, ingredients list, and cooking steps.`,
         true
       )
-
-      addLog('✍️ Übersetze / Traduction...', 'rewrite')
-      setStatus('Generiere Rezept / Génération recette...')
-
-      // Step 2: generate bilingual JSON from search results (no web search needed)
+      addLog('✍️ Generiere bilinguale Version...', 'rewrite')
       const rawText = await callClaude(`
-Based on this recipe information:
+Based on this recipe:
 ${searchText.slice(0, 1500)}
 
-Write a complete bilingual recipe in German and French. Return ONLY this JSON (nothing else, no markdown):
-{"de":{"title":"Dish name in German","description":"2-3 sentence description in German","ingredients":["200g Butter","3 Eier","100ml Milch"],"steps":["Schritt 1 beschreibung","Schritt 2 beschreibung","Schritt 3 beschreibung"],"time":"45 Minuten","servings":"4 Portionen","difficulty":"Mittel","tip":"Ein nützlicher Tipp auf Deutsch","category":"${topic.de}"},"fr":{"title":"Dish name in French","description":"Description en 2-3 phrases en français","ingredients":["200g de beurre","3 oeufs","100ml de lait"],"steps":["Étape 1 description","Étape 2 description","Étape 3 description"],"time":"45 minutes","servings":"4 portions","difficulty":"Moyen","tip":"Un conseil utile en français","category":"${topic.fr}"}}`,
-        false
-      )
+Write a complete recipe in German and French. Return ONLY this JSON:
+{"de":{"title":"Name auf Deutsch","description":"2-3 Sätze auf Deutsch","ingredients":["200g Butter","3 Eier","100ml Milch","2 TL Zucker"],"steps":["Schritt 1","Schritt 2","Schritt 3","Schritt 4"],"time":"45","servings":"4","difficulty":"Mittel","tip":"Tipp auf Deutsch","category":"${topic.de}"},"fr":{"title":"Nom en français","description":"2-3 phrases en français","ingredients":["200g de beurre","3 oeufs","100ml de lait","2 c. à c. de sucre"],"steps":["Étape 1","Étape 2","Étape 3","Étape 4"],"time":"45","servings":"4","difficulty":"Moyen","tip":"Conseil en français","category":"${topic.fr}"}}`, false)
 
       let data = parseJSON(rawText)
-
-      if (!data || !data.de || !data.fr) {
-        // Fallback with proper structure
+      if (!data?.de || !data?.fr) {
         data = {
-          de: { title: topic.query, description: 'Ein klassisches Gericht mit reichem Geschmack und einfacher Zubereitung.', ingredients: ['500g Hauptzutat', '2 Zwiebeln', '3 Knoblauchzehen', 'Salz und Pfeffer', 'Olivenöl'], steps: ['Alle Zutaten vorbereiten und waschen.', 'Die Zwiebeln und den Knoblauch fein hacken.', 'In einem Topf mit Olivenöl anbraten.', 'Die Hauptzutat hinzufügen und 20 Minuten köcheln lassen.', 'Mit Salz und Pfeffer abschmecken und servieren.'], time: '45 Minuten', servings: '4 Portionen', difficulty: 'Mittel', tip: 'Frische, hochwertige Zutaten machen den Unterschied.', category: topic.de },
-          fr: { title: topic.query, description: 'Un plat classique avec une saveur riche et une préparation simple.', ingredients: ['500g ingrédient principal', '2 oignons', '3 gousses d\'ail', 'Sel et poivre', 'Huile d\'olive'], steps: ['Préparer et laver tous les ingrédients.', 'Émincer finement les oignons et l\'ail.', 'Faire revenir dans une casserole avec l\'huile d\'olive.', 'Ajouter l\'ingrédient principal et laisser mijoter 20 minutes.', 'Assaisonner avec du sel et du poivre, puis servir.'], time: '45 minutes', servings: '4 portions', difficulty: 'Moyen', tip: 'Des ingrédients frais et de qualité font toute la différence.', category: topic.fr },
+          de: { title: topic.query, description: 'Ein klassisches Gericht mit reichem Geschmack.', ingredients: ['500g Hauptzutat','2 Zwiebeln','3 Knoblauchzehen','Salz und Pfeffer','2 EL Olivenöl'], steps: ['Zutaten vorbereiten.','Zwiebeln und Knoblauch hacken.','In Olivenöl anbraten.','Alles zusammen 20 Min. köcheln.','Abschmecken und servieren.'], time: '40', servings: '4', difficulty: 'Mittel', tip: 'Frische Zutaten verwenden.', category: topic.de },
+          fr: { title: topic.query, description: 'Un plat classique avec une saveur riche.', ingredients: ['500g ingrédient principal','2 oignons','3 gousses d\'ail','Sel et poivre','2 c. à s. d\'huile d\'olive'], steps: ['Préparer les ingrédients.','Émincer oignons et ail.','Faire revenir dans l\'huile.','Laisser mijoter 20 min.','Assaisonner et servir.'], time: '40', servings: '4', difficulty: 'Moyen', tip: 'Utiliser des ingrédients frais.', category: topic.fr },
         }
       }
-
-      // Ensure arrays exist
       if (!Array.isArray(data.de?.ingredients)) data.de.ingredients = ['Zutaten nach Rezept']
       if (!Array.isArray(data.de?.steps)) data.de.steps = ['Nach klassischer Methode zubereiten.']
       if (!Array.isArray(data.fr?.ingredients)) data.fr.ingredients = ['Ingrédients selon la recette']
@@ -199,20 +193,19 @@ Write a complete bilingual recipe in German and French. Return ONLY this JSON (n
 
       const newRecipe = {
         id: Date.now(),
-        de: data.de,
-        fr: data.fr,
+        de: data.de, fr: data.fr,
         publishedAt: new Date().toISOString(),
-        color: genColor(data.de?.title || topic.query),
-        views: Math.floor(Math.random() * 200) + 10,
-        likes: Math.floor(Math.random() * 50) + 1,
+        theme: genTheme(data.de?.title || topic.query),
+        emoji: genEmoji(data.de?.title || topic.query),
+        views: Math.floor(Math.random() * 500) + 50,
+        likes: Math.floor(Math.random() * 80) + 5,
       }
-
       setRecipes(prev => [newRecipe, ...prev])
-      addLog(`✅ DE: «${data.de?.title}» | FR: «${data.fr?.title}»`, 'success')
-      setStatus(`${data.de?.title} / ${data.fr?.title}`)
+      addLog(`✅ «${data.de?.title}» / «${data.fr?.title}»`, 'success')
+      setStatus(`${data.de?.title}`)
     } catch (err) {
-      addLog(`❌ Fehler / Erreur: ${err.message}`, 'error')
-      setStatus('Fehler / Erreur')
+      addLog(`❌ ${err.message}`, 'error')
+      setStatus('Fehler')
     } finally {
       setLoading(false)
     }
@@ -222,12 +215,12 @@ Write a complete bilingual recipe in German and French. Return ONLY this JSON (n
     if (autoPublishing) {
       clearInterval(intervalRef.current)
       setAutoPublishing(false)
-      setStatus('Gestoppt / Arrêtée')
-      addLog('⏹ Gestoppt / Arrêtée', 'info')
+      setStatus('')
+      addLog('⏹ Gestoppt', 'info')
     } else {
       setAutoPublishing(true)
       setShowPanel(true)
-      addLog('▶️ Gestartet / Démarrée (alle 40 Sek.)', 'info')
+      addLog('▶️ Gestartet — alle 40 Sek.', 'info')
       publishOneRecipe()
       intervalRef.current = setInterval(publishOneRecipe, 40000)
     }
@@ -235,7 +228,6 @@ Write a complete bilingual recipe in German and French. Return ONLY this JSON (n
 
   useEffect(() => () => clearInterval(intervalRef.current), [])
 
-  // Filter using current language data
   const allCats = UI[lang].categories
   const filtered = recipes.filter(recipe => {
     const rv = r(recipe)
@@ -244,160 +236,369 @@ Write a complete bilingual recipe in German and French. Return ONLY this JSON (n
     return matchCat && (!q || rv.title?.toLowerCase().includes(q) || rv.description?.toLowerCase().includes(q))
   })
 
+  const difficultyColor = (d) => {
+    if (!d) return '#888'
+    const s = d.toLowerCase()
+    if (s === 'leicht' || s === 'facile') return '#6a994e'
+    if (s === 'schwer' || s === 'difficile') return '#e63946'
+    return '#e9c46a'
+  }
+
   return (
-    <div style={{ fontFamily:"'Georgia',serif", background:'#f8f5f0', minHeight:'100vh', color:'#1e140a' }}>
+    <div style={{ fontFamily:"'DM Sans', 'Helvetica Neue', sans-serif", background:'#f5f3ee', minHeight:'100vh', color:'#1a1a1a' }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Source+Sans+3:wght@300;400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        .card{transition:transform .22s cubic-bezier(.4,0,.2,1),box-shadow .22s;cursor:pointer}
-        .card:hover{transform:translateY(-5px);box-shadow:0 18px 52px rgba(0,0,0,.14)!important}
-        .btn{cursor:pointer;border:none;transition:all .18s}
-        .btn:hover{filter:brightness(1.12)}
-        .catbtn{cursor:pointer;background:none;border:none;white-space:nowrap;transition:all .18s}
-        .langbtn{cursor:pointer;transition:all .2s}
-        .log-info{color:#888} .log-search{color:#2980b9} .log-rewrite{color:#8e44ad}
-        .log-success{color:#27ae60;font-weight:600} .log-error{color:#c0392b}
-        .pulse{animation:pulse 1.4s ease-in-out infinite}
-        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-        .overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
-        .modal{background:#fff;border-radius:16px;max-width:740px;width:100%;max-height:92vh;overflow-y:auto}
-        ::-webkit-scrollbar{width:5px} ::-webkit-scrollbar-thumb{background:#c0392b;border-radius:3px}
-        input:focus{outline:2px solid #c0392b;outline-offset:1px}
-        .lang-badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:10px;font-family:'Source Sans 3',sans-serif;font-weight:700;letter-spacing:.5px}
+
+        .card {
+          cursor:pointer;
+          transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .25s ease;
+          border-radius: 20px;
+          overflow: hidden;
+        }
+        .card:hover { transform: translateY(-6px) scale(1.01); box-shadow: 0 24px 60px rgba(0,0,0,.18) !important; }
+
+        .catpill {
+          cursor:pointer;
+          border:none;
+          transition: all .2s ease;
+          white-space:nowrap;
+          border-radius: 100px;
+          padding: 8px 18px;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 13px;
+          font-weight: 500;
+        }
+        .catpill:hover { transform: translateY(-1px); }
+
+        .langbtn { cursor:pointer; border:none; transition:all .2s; }
+
+        .log-info{color:#aaa} .log-search{color:#6baed6} .log-rewrite{color:#9e9ac8}
+        .log-success{color:#74c476;font-weight:600} .log-error{color:#fb6a4a}
+
+        .pulse{animation:pulse 1.6s ease-in-out infinite}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+        @keyframes fadeInUp {
+          from { opacity:0; transform: translateY(20px); }
+          to   { opacity:1; transform: translateY(0); }
+        }
+        .card-appear { animation: fadeInUp .4s ease forwards; }
+
+        .overlay{
+          position:fixed;inset:0;
+          background:rgba(15,12,8,.7);
+          z-index:200;
+          display:flex;align-items:center;justify-content:center;
+          padding:20px;
+          backdrop-filter: blur(8px);
+        }
+        .modal{
+          background:#fff;
+          border-radius:24px;
+          max-width:680px;width:100%;
+          max-height:90vh;overflow-y:auto;
+          box-shadow: 0 40px 100px rgba(0,0,0,.3);
+        }
+        .modal-hero {
+          height: 220px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 24px 24px 0 0;
+          position: relative;
+        }
+        .modal-emoji { font-size: 80px; filter: drop-shadow(0 4px 12px rgba(0,0,0,.2)); }
+
+        ::-webkit-scrollbar{width:4px}
+        ::-webkit-scrollbar-track{background:transparent}
+        ::-webkit-scrollbar-thumb{background:#ccc;border-radius:2px}
+
+        .search-wrap {
+          position: relative;
+          transition: all .2s;
+        }
+        .search-input {
+          width: 100%;
+          padding: 14px 20px 14px 48px;
+          border-radius: 14px;
+          border: 2px solid transparent;
+          background: #fff;
+          font-size: 15px;
+          font-family: 'DM Sans', sans-serif;
+          color: #1a1a1a;
+          transition: all .2s;
+          box-shadow: 0 2px 12px rgba(0,0,0,.06);
+        }
+        .search-input:focus {
+          outline: none;
+          border-color: #2d6a4f;
+          box-shadow: 0 4px 20px rgba(45,106,79,.15);
+        }
+        .search-icon {
+          position: absolute;
+          left: 16px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #999;
+          font-size: 18px;
+          pointer-events: none;
+        }
+
+        .stat-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          background: rgba(255,255,255,.18);
+          border-radius: 100px;
+          padding: 5px 12px;
+          font-size: 12px;
+          font-weight: 500;
+          color: rgba(255,255,255,.95);
+          backdrop-filter: blur(4px);
+        }
+
+        .ingredient-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 10px 0;
+          border-bottom: 1px solid #f0ede8;
+          font-size: 14px;
+          color: #333;
+        }
+        .ingredient-dot {
+          width: 6px;height:6px;
+          border-radius:50%;
+          flex-shrink:0;
+        }
+        .step-row {
+          display: flex;
+          gap: 16px;
+          margin-bottom: 18px;
+          align-items: flex-start;
+        }
+        .step-num {
+          width: 30px;height:30px;
+          border-radius:50%;
+          display:flex;align-items:center;justify-content:center;
+          font-size:13px;font-weight:600;
+          flex-shrink:0;
+          margin-top:1px;
+          color:#fff;
+        }
+
+        .pub-btn {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 12px 24px;
+          border-radius: 100px;
+          font-family: 'DM Sans', sans-serif;
+          font-weight: 600;
+          font-size: 14px;
+          cursor: pointer;
+          border: none;
+          transition: all .2s;
+        }
+        .pub-btn:hover { transform: translateY(-1px); filter: brightness(1.08); }
+        .pub-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+        .other-lang-block {
+          background: #f8f6f2;
+          border-radius: 16px;
+          padding: 20px 24px;
+          margin-top: 8px;
+        }
       `}</style>
 
       {/* ── HEADER ── */}
-      <header style={{ background:'linear-gradient(135deg,#1a0c06 0%,#2d1508 100%)', color:'#fff', padding:'0 24px' }}>
-        <div style={{ maxWidth:1200, margin:'0 auto' }}>
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'22px 0 18px', flexWrap:'wrap', gap:14 }}>
-            <div>
-              <div style={{ fontFamily:"'Playfair Display',serif", fontSize:34, fontWeight:900, color:'#f0d5a8', letterSpacing:-0.5 }}>
-                🍽 {ui.siteName}
-              </div>
-              <div style={{ fontSize:11, color:'#b89060', letterSpacing:3.5, textTransform:'uppercase', fontFamily:"'Source Sans 3',sans-serif", marginTop:2 }}>
-                {ui.tagline}
-              </div>
+      <header style={{ background:'#fff', borderBottom:'1px solid #ede9e3', position:'sticky', top:0, zIndex:50, boxShadow:'0 2px 20px rgba(0,0,0,.04)' }}>
+        <div style={{ maxWidth:1280, margin:'0 auto', padding:'0 32px' }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', height:68, gap:20 }}>
+
+            {/* Logo */}
+            <div style={{ display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
+              <div style={{ width:36, height:36, background:'linear-gradient(135deg,#2d6a4f,#40916c)', borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>🍽</div>
+              <span style={{ fontFamily:"'DM Serif Display',serif", fontSize:24, color:'#1a1a1a', letterSpacing:'-0.5px' }}>{ui.siteName}</span>
             </div>
 
-            <div style={{ display:'flex', gap:10, alignItems:'center', flexWrap:'wrap' }}>
-              {/* Language switcher */}
-              <div style={{ display:'flex', background:'#ffffff18', borderRadius:10, overflow:'hidden', border:'1px solid #ffffff25' }}>
+            {/* Search */}
+            <div className="search-wrap" style={{ flex:1, maxWidth:480 }}>
+              <span className="search-icon">🔍</span>
+              <input
+                className="search-input"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
+                placeholder={ui.searchPlaceholder}
+              />
+            </div>
+
+            {/* Right controls */}
+            <div style={{ display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
+              {/* Lang switcher */}
+              <div style={{ display:'flex', background:'#f0ede8', borderRadius:100, padding:3, gap:2 }}>
                 {['de','fr'].map(l => (
                   <button key={l} className="langbtn" onClick={() => switchLang(l)}
-                    style={{ padding:'9px 20px', fontFamily:"'Source Sans 3',sans-serif", fontWeight:700, fontSize:13, border:'none', cursor:'pointer', letterSpacing:1, background:lang===l?'#c0392b':'transparent', color:lang===l?'#fff':'#d4b896', textTransform:'uppercase' }}>
+                    style={{ padding:'6px 14px', borderRadius:100, fontSize:13, fontWeight:600, background: lang===l?'#fff':'transparent', color: lang===l?'#1a1a1a':'#888', boxShadow: lang===l?'0 1px 4px rgba(0,0,0,.1)':'none' }}>
                     {l==='de'?'🇩🇪 DE':'🇫🇷 FR'}
                   </button>
                 ))}
               </div>
 
               {recipes.length > 0 && (
-                <div style={{ background:'#27ae6088', color:'#fff', padding:'7px 14px', borderRadius:20, fontSize:13, fontFamily:"'Source Sans 3',sans-serif", border:'1px solid #27ae6055' }}>
-                  📚 {recipes.length} {ui.recipes}
-                </div>
+                <span style={{ background:'#f0ede8', color:'#555', padding:'6px 14px', borderRadius:100, fontSize:13, fontWeight:500 }}>
+                  {recipes.length} {ui.recipes}
+                </span>
               )}
-              <button className="btn" onClick={() => setShowPanel(!showPanel)}
-                style={{ background:'#ffffff15', color:'#f0d5a8', padding:'8px 16px', borderRadius:8, fontFamily:"'Source Sans 3',sans-serif", fontSize:13, border:'1px solid #ffffff25' }}>
-                {showPanel ? ui.hidePanel : ui.panel}
+
+              <button className="pub-btn" onClick={() => setShowPanel(!showPanel)}
+                style={{ background:'#f0ede8', color:'#555', padding:'8px 16px', fontSize:13 }}>
+                ⚙️ {showPanel ? ui.hidePanel : ui.panel}
               </button>
-              <button className="btn" onClick={toggleAuto}
-                style={{ background:autoPublishing?'#c0392b':'#27ae60', color:'#fff', padding:'9px 22px', borderRadius:8, fontFamily:"'Source Sans 3',sans-serif", fontWeight:700, fontSize:14 }}>
-                {autoPublishing ? ui.stop : ui.autoPublish}
+
+              <button className="pub-btn" onClick={toggleAuto}
+                style={{ background: autoPublishing ? '#e63946':'#2d6a4f', color:'#fff', boxShadow: autoPublishing?'0 4px 16px rgba(230,57,70,.35)':'0 4px 16px rgba(45,106,79,.35)' }}>
+                {autoPublishing ? <>⏹ {ui.stop}</> : <>▶ {ui.autoPublish}</>}
               </button>
             </div>
-          </div>
-
-          {/* Search */}
-          <div style={{ paddingBottom:22 }}>
-            <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder={ui.searchPlaceholder}
-              style={{ width:'100%', padding:'13px 22px', borderRadius:10, border:'none', background:'#ffffff12', color:'#f0d5a8', fontSize:15, fontFamily:"'Source Sans 3',sans-serif" }} />
           </div>
         </div>
       </header>
 
       {/* ── PUBLISH PANEL ── */}
       {showPanel && (
-        <div style={{ background:'#130a04', color:'#f0d5a8', padding:'16px 24px', borderBottom:'1px solid #2a1408' }}>
-          <div style={{ maxWidth:1200, margin:'0 auto', display:'flex', gap:20, flexWrap:'wrap', alignItems:'flex-start' }}>
-            <div style={{ flex:1, minWidth:220 }}>
-              <div style={{ fontSize:11, color:'#9a7050', marginBottom:8, fontFamily:"'Source Sans 3',sans-serif", textTransform:'uppercase', letterSpacing:2 }}>
-                {autoPublishing && <span className="pulse" style={{ marginRight:6 }}>●</span>}
+        <div style={{ background:'#1a1a1a', color:'#f0ede8', padding:'16px 32px' }}>
+          <div style={{ maxWidth:1280, margin:'0 auto', display:'flex', gap:24, flexWrap:'wrap', alignItems:'center' }}>
+            <div style={{ flex:1, minWidth:200 }}>
+              <div style={{ fontSize:11, color:'#666', marginBottom:4, textTransform:'uppercase', letterSpacing:2 }}>
+                {autoPublishing && <span className="pulse" style={{ marginRight:6, color:'#74c476' }}>●</span>}
                 {autoPublishing ? ui.active : ui.management}
               </div>
-              <div style={{ fontSize:12, color:'#c8a070', fontFamily:"'Source Sans 3',sans-serif", marginBottom:12, minHeight:16, lineHeight:1.5 }}>{status || ui.waiting}</div>
-              <button className="btn" onClick={publishOneRecipe} disabled={loading || autoPublishing}
-                style={{ background:'#c0392b', color:'#fff', padding:'7px 16px', borderRadius:6, fontSize:12, fontFamily:"'Source Sans 3',sans-serif", opacity:(loading||autoPublishing)?.45:1 }}>
-                {loading ? ui.loading : `🇩🇪+🇫🇷 ${ui.publishOne}`}
-              </button>
+              <div style={{ fontSize:13, color:'#ccc', minHeight:18 }}>{status || ui.waiting}</div>
             </div>
-            <div ref={logRef} style={{ flex:2, minWidth:280, maxHeight:120, overflowY:'auto', background:'#0a0502', borderRadius:8, padding:'10px 14px', fontFamily:'monospace', fontSize:12 }}>
+            <button className="pub-btn" onClick={publishOneRecipe} disabled={loading || autoPublishing}
+              style={{ background:'#2d2d2d', color:'#f0ede8', border:'1px solid #333' }}>
+              {loading ? ui.loading : `🇩🇪+🇫🇷 ${ui.publishOne}`}
+            </button>
+            <div ref={logRef} style={{ flex:2, minWidth:260, maxHeight:80, overflowY:'auto', background:'#111', borderRadius:10, padding:'10px 14px', fontFamily:'monospace', fontSize:11 }}>
               {log.length===0
                 ? <div className="log-info">{ui.logEmpty}</div>
-                : log.map((l,i) => <div key={i} className={`log-${l.type}`}><span style={{ color:'#444', marginRight:8 }}>{l.time}</span>{l.msg}</div>)}
+                : log.map((l,i) => <div key={i} className={`log-${l.type}`}><span style={{ color:'#555', marginRight:8 }}>{l.time}</span>{l.msg}</div>)}
             </div>
           </div>
         </div>
       )}
 
-      {/* ── CATEGORIES ── */}
-      <div style={{ background:'#fff', borderBottom:'2px solid #ede8e0', position:'sticky', top:0, zIndex:10, boxShadow:'0 2px 12px rgba(0,0,0,.06)' }}>
-        <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 24px', display:'flex', overflowX:'auto' }}>
-          <button className="catbtn" onClick={() => setActiveCat('ALL')}
-            style={{ padding:'15px 18px', fontFamily:"'Source Sans 3',sans-serif", fontSize:13, color:activeCat==='ALL'?'#c0392b':'#6b5040', fontWeight:activeCat==='ALL'?700:400, borderBottom:`3px solid ${activeCat==='ALL'?'#c0392b':'transparent'}` }}>
-            {ui.allCat}
-          </button>
-          {allCats.map(cat => (
-            <button key={cat} className="catbtn" onClick={() => setActiveCat(cat)}
-              style={{ padding:'15px 18px', fontFamily:"'Source Sans 3',sans-serif", fontSize:13, color:activeCat===cat?'#c0392b':'#6b5040', fontWeight:activeCat===cat?700:400, borderBottom:`3px solid ${activeCat===cat?'#c0392b':'transparent'}` }}>
-              {cat}
+      {/* ── HERO + CATEGORIES ── */}
+      <div style={{ background:'#fff', borderBottom:'1px solid #ede9e3', padding:'24px 32px 0' }}>
+        <div style={{ maxWidth:1280, margin:'0 auto' }}>
+          {/* Title row */}
+          {!searchQuery && (
+            <div style={{ marginBottom:20 }}>
+              <h1 style={{ fontFamily:"'DM Serif Display',serif", fontSize:36, color:'#1a1a1a', lineHeight:1.15, letterSpacing:'-0.5px' }}>
+                {ui.tagline}
+              </h1>
+              {recipes.length > 0 && (
+                <p style={{ fontSize:14, color:'#999', marginTop:4, fontWeight:400 }}>
+                  {filtered.length} {ui.recipes}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Category pills */}
+          <div style={{ display:'flex', gap:8, overflowX:'auto', paddingBottom:0, scrollbarWidth:'none' }}>
+            <button className="catpill" onClick={() => setActiveCat('ALL')}
+              style={{ background: activeCat==='ALL' ? '#1a1a1a':'#f0ede8', color: activeCat==='ALL'?'#fff':'#555' }}>
+              {ui.allCat}
             </button>
-          ))}
+            {allCats.map((cat, i) => (
+              <button key={cat} className="catpill" onClick={() => setActiveCat(cat)}
+                style={{ background: activeCat===cat?'#1a1a1a':'#f0ede8', color: activeCat===cat?'#fff':'#555' }}>
+                {UI[lang].catIcons[i]} {cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Active filter underline */}
+          <div style={{ height:3, background:'#f5f3ee', marginTop:0 }} />
         </div>
       </div>
 
-      {/* ── RECIPE GRID ── */}
-      <main style={{ maxWidth:1200, margin:'0 auto', padding:'36px 24px' }}>
+      {/* ── GRID ── */}
+      <main style={{ maxWidth:1280, margin:'0 auto', padding:'36px 32px' }}>
         {filtered.length === 0 ? (
-          <div style={{ textAlign:'center', padding:'90px 20px', color:'#a08060' }}>
-            <div style={{ fontSize:72, marginBottom:20 }}>🍳</div>
-            <div style={{ fontFamily:"'Playfair Display',serif", fontSize:26, marginBottom:10, color:'#3a2010' }}>
+          <div style={{ textAlign:'center', padding:'100px 20px' }}>
+            <div style={{ fontSize:80, marginBottom:20 }}>🍳</div>
+            <h2 style={{ fontFamily:"'DM Serif Display',serif", fontSize:32, marginBottom:12, color:'#1a1a1a' }}>
               {recipes.length===0 ? ui.noRecipes : ui.noResults}
-            </div>
-            <div style={{ fontFamily:"'Source Sans 3',sans-serif", fontSize:15 }}>
+            </h2>
+            <p style={{ fontSize:15, color:'#999' }}>
               {recipes.length===0 ? ui.noRecipesHint : ui.noResultsHint}
-            </div>
+            </p>
+            {recipes.length === 0 && (
+              <button className="pub-btn" onClick={toggleAuto}
+                style={{ background:'#2d6a4f', color:'#fff', margin:'24px auto 0', boxShadow:'0 4px 16px rgba(45,106,79,.3)' }}>
+                ▶ {ui.autoPublish}
+              </button>
+            )}
           </div>
         ) : (
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(310px,1fr))', gap:26 }}>
-            {filtered.map(recipe => {
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))', gap:24 }}>
+            {filtered.map((recipe, idx) => {
               const rv = r(recipe)
+              const theme = recipe.theme
               return (
-                <div key={recipe.id} className="card" onClick={() => setSelected(recipe)}
-                  style={{ background:'#fff', borderRadius:14, overflow:'hidden', boxShadow:'0 2px 18px rgba(0,0,0,.07)' }}>
-                  <div style={{ height:6, background:recipe.color }} />
-                  <div style={{ padding:'22px 24px' }}>
-                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
-                      <span style={{ background:recipe.color+'20', color:recipe.color, padding:'3px 11px', borderRadius:12, fontSize:11, fontFamily:"'Source Sans 3',sans-serif", fontWeight:700 }}>
+                <div key={recipe.id} className="card card-appear" onClick={() => setSelected(recipe)}
+                  style={{ boxShadow:'0 4px 20px rgba(0,0,0,.08)', animationDelay:`${idx * 0.05}s` }}>
+                  {/* Card image area */}
+                  <div style={{ height:200, background: theme.bg, display:'flex', flexDirection:'column', justifyContent:'space-between', padding:'20px', position:'relative', overflow:'hidden' }}>
+                    {/* Decorative circle */}
+                    <div style={{ position:'absolute', right:-30, bottom:-30, width:160, height:160, borderRadius:'50%', background:'rgba(255,255,255,.08)' }} />
+                    <div style={{ position:'absolute', right:20, bottom:-20, width:100, height:100, borderRadius:'50%', background:'rgba(255,255,255,.06)' }} />
+
+                    {/* Top row */}
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+                      <span style={{ background:'rgba(255,255,255,.2)', backdropFilter:'blur(4px)', color:'#fff', padding:'4px 12px', borderRadius:100, fontSize:11, fontWeight:600, letterSpacing:.5 }}>
                         {rv.category}
                       </span>
                       <div style={{ display:'flex', gap:4 }}>
-                        <span className="lang-badge" style={{ background:'#2980b920', color:'#2980b9' }}>🇩🇪</span>
-                        <span className="lang-badge" style={{ background:'#c0392b20', color:'#c0392b' }}>🇫🇷</span>
+                        <span style={{ fontSize:10, color:'rgba(255,255,255,.7)', background:'rgba(0,0,0,.15)', borderRadius:4, padding:'2px 6px', fontWeight:600 }}>DE</span>
+                        <span style={{ fontSize:10, color:'rgba(255,255,255,.7)', background:'rgba(0,0,0,.15)', borderRadius:4, padding:'2px 6px', fontWeight:600 }}>FR</span>
                       </div>
                     </div>
-                    <h3 style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:700, marginBottom:8, lineHeight:1.3, color:'#1a0c06' }}>{rv.title}</h3>
-                    {/* Show other language title as subtitle */}
-                    <div style={{ fontSize:12, color:'#9a8060', fontFamily:"'Source Sans 3',sans-serif", marginBottom:10, fontStyle:'italic' }}>
+
+                    {/* Emoji */}
+                    <div style={{ fontSize:64, textAlign:'center', filter:'drop-shadow(0 4px 8px rgba(0,0,0,.15))', lineHeight:1 }}>
+                      {recipe.emoji}
+                    </div>
+
+                    {/* Bottom stats */}
+                    <div style={{ display:'flex', gap:8 }}>
+                      {rv.time && <span className="stat-chip">⏱ {rv.time} {ui.min}</span>}
+                      {rv.servings && <span className="stat-chip">👥 {rv.servings} {ui.portions}</span>}
+                    </div>
+                  </div>
+
+                  {/* Card body */}
+                  <div style={{ background:'#fff', padding:'18px 20px 20px' }}>
+                    <h3 style={{ fontFamily:"'DM Serif Display',serif", fontSize:19, lineHeight:1.3, marginBottom:6, color:'#1a1a1a' }}>
+                      {rv.title}
+                    </h3>
+                    <div style={{ fontSize:12, color:'#bbb', fontStyle:'italic', marginBottom:10 }}>
                       {lang==='de' ? recipe.fr?.title : recipe.de?.title}
                     </div>
-                    <p style={{ fontFamily:"'Source Sans 3',sans-serif", fontSize:13.5, color:'#6a5040', lineHeight:1.65, marginBottom:16, display:'-webkit-box', WebkitLineClamp:3, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
+                    <p style={{ fontSize:13, color:'#777', lineHeight:1.6, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', marginBottom:14 }}>
                       {rv.description}
                     </p>
-                    <div style={{ display:'flex', gap:14, fontSize:12, color:'#9a8060', fontFamily:"'Source Sans 3',sans-serif" }}>
-                      <span>⏱ {rv.time}</span><span>👥 {rv.servings}</span>
-                      <span>👁 {recipe.views}</span><span>❤️ {recipe.likes}</span>
-                    </div>
-                    <div style={{ marginTop:10, fontSize:11, color:'#baa888', fontFamily:"'Source Sans 3',sans-serif" }}>
-                      {fmtDate(recipe.publishedAt, ui.locale)}
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                      <span style={{ fontSize:12, fontWeight:600, color: difficultyColor(rv.difficulty) }}>
+                        {rv.difficulty}
+                      </span>
+                      <span style={{ fontSize:11, color:'#ccc' }}>{fmtDate(recipe.publishedAt, ui.locale)}</span>
                     </div>
                   </div>
                 </div>
@@ -412,82 +613,74 @@ Write a complete bilingual recipe in German and French. Return ONLY this JSON (n
         const rv = r(selected)
         const otherLang = lang === 'de' ? 'fr' : 'de'
         const otherV = selected[otherLang]
+        const theme = selected.theme
         return (
           <div className="overlay" onClick={() => setSelected(null)}>
             <div className="modal" onClick={e => e.stopPropagation()}>
-              <div style={{ height:7, background:selected.color, borderRadius:'16px 16px 0 0' }} />
-              <div style={{ padding:'30px 34px 34px' }}>
-                {/* Header */}
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:16 }}>
-                  <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap' }}>
-                    <span style={{ background:selected.color+'20', color:selected.color, padding:'4px 12px', borderRadius:12, fontSize:11, fontFamily:"'Source Sans 3',sans-serif", fontWeight:700 }}>
-                      {rv.category}
-                    </span>
-                    <span style={{ fontSize:11, color:'#9a8060', fontFamily:"'Source Sans 3',sans-serif" }}>{rv.difficulty}</span>
-                  </div>
-                  <button className="btn" onClick={() => setSelected(null)}
-                    style={{ background:'#f0ebe2', width:34, height:34, borderRadius:17, fontSize:18, color:'#6a5040', display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
+              {/* Hero */}
+              <div className="modal-hero" style={{ background: theme.bg }}>
+                <div style={{ position:'absolute', right:-40, top:-40, width:200, height:200, borderRadius:'50%', background:'rgba(255,255,255,.07)' }} />
+                <div className="modal-emoji">{selected.emoji}</div>
+                <button onClick={() => setSelected(null)}
+                  style={{ position:'absolute', top:16, right:16, width:36, height:36, borderRadius:'50%', background:'rgba(0,0,0,.25)', border:'none', color:'#fff', fontSize:18, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
+                <div style={{ position:'absolute', bottom:16, left:20, display:'flex', gap:8 }}>
+                  {rv.time && <span className="stat-chip">⏱ {rv.time} {ui.min}</span>}
+                  {rv.servings && <span className="stat-chip">👥 {rv.servings} {ui.portions}</span>}
+                  {rv.difficulty && <span className="stat-chip" style={{ background: difficultyColor(rv.difficulty)+'44' }}>{rv.difficulty}</span>}
                 </div>
+              </div>
 
-                {/* Title + other lang title */}
-                <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:30, fontWeight:900, marginBottom:6, color:'#1a0c06', lineHeight:1.2 }}>{rv.title}</h2>
-                <div style={{ fontSize:14, color:'#9a8060', fontStyle:'italic', fontFamily:"'Playfair Display',serif", marginBottom:16 }}>
+              {/* Content */}
+              <div style={{ padding:'28px 32px 36px' }}>
+                <span style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1.5 }}>{rv.category}</span>
+                <h2 style={{ fontFamily:"'DM Serif Display',serif", fontSize:28, lineHeight:1.2, margin:'8px 0 6px', color:'#1a1a1a' }}>{rv.title}</h2>
+                <div style={{ fontSize:13, color:'#bbb', fontStyle:'italic', marginBottom:16 }}>
                   {lang==='de'?'🇫🇷':'🇩🇪'} {otherV?.title}
                 </div>
+                <p style={{ fontSize:15, color:'#555', lineHeight:1.75, marginBottom:28 }}>{rv.description}</p>
 
-                <p style={{ fontFamily:"'Source Sans 3',sans-serif", fontSize:15, color:'#6a5040', lineHeight:1.75, marginBottom:22 }}>{rv.description}</p>
-
-                {/* Stats */}
-                <div style={{ display:'flex', gap:24, marginBottom:26, padding:'16px 22px', background:'#faf6f0', borderRadius:12 }}>
-                  {[['⏱', rv.time],['👥', rv.servings],['📊', rv.difficulty]].map(([ic,val]) => (
-                    <div key={ic} style={{ textAlign:'center' }}>
-                      <div style={{ fontSize:20 }}>{ic}</div>
-                      <div style={{ fontSize:12, fontFamily:"'Source Sans 3',sans-serif", color:'#6a5040', marginTop:4 }}>{val}</div>
+                {/* Ingredients */}
+                <h4 style={{ fontFamily:"'DM Serif Display',serif", fontSize:20, marginBottom:14, color:'#1a1a1a' }}>{ui.ingredients}</h4>
+                <div style={{ marginBottom:28 }}>
+                  {(rv.ingredients||[]).map((ing,i) => (
+                    <div key={i} className="ingredient-row">
+                      <span className="ingredient-dot" style={{ background: theme.bg.includes('#') ? theme.bg.split(',')[0].replace('linear-gradient(145deg, ','') : '#2d6a4f' }} />
+                      {ing}
                     </div>
                   ))}
                 </div>
 
-                {/* Ingredients */}
-                <h4 style={{ fontFamily:"'Playfair Display',serif", fontSize:20, marginBottom:14, color:'#1a0c06' }}>{ui.ingredients}</h4>
-                <ul style={{ listStyle:'none', marginBottom:26 }}>
-                  {(rv.ingredients||[]).map((ing,i) => (
-                    <li key={i} style={{ fontFamily:"'Source Sans 3',sans-serif", fontSize:14, color:'#3a2810', padding:'7px 0', borderBottom:'1px dashed #e8e0d0', display:'flex', alignItems:'center', gap:10 }}>
-                      <span style={{ width:7, height:7, borderRadius:'50%', background:selected.color, display:'inline-block', flexShrink:0 }} />{ing}
-                    </li>
-                  ))}
-                </ul>
-
                 {/* Steps */}
-                <h4 style={{ fontFamily:"'Playfair Display',serif", fontSize:20, marginBottom:14, color:'#1a0c06' }}>{ui.preparation}</h4>
-                <ol style={{ listStyle:'none', marginBottom:26 }}>
+                <h4 style={{ fontFamily:"'DM Serif Display',serif", fontSize:20, marginBottom:16, color:'#1a1a1a' }}>{ui.preparation}</h4>
+                <div style={{ marginBottom:24 }}>
                   {(rv.steps||[]).map((step,i) => (
-                    <li key={i} style={{ display:'flex', gap:14, fontFamily:"'Source Sans 3',sans-serif", fontSize:14, color:'#3a2810', lineHeight:1.65, marginBottom:14 }}>
-                      <span style={{ background:selected.color, color:'#fff', width:28, height:28, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:700, flexShrink:0, marginTop:1 }}>{i+1}</span>
-                      {step}
-                    </li>
+                    <div key={i} className="step-row">
+                      <span className="step-num" style={{ background:'#1a1a1a', fontSize:12 }}>{i+1}</span>
+                      <span style={{ fontSize:14, color:'#444', lineHeight:1.7, paddingTop:5 }}>{step}</span>
+                    </div>
                   ))}
-                </ol>
+                </div>
 
                 {/* Tip */}
                 {rv.tip && (
-                  <div style={{ background:selected.color+'12', border:`1px solid ${selected.color}30`, borderRadius:12, padding:'16px 20px', marginBottom:20 }}>
-                    <div style={{ fontFamily:"'Source Sans 3',sans-serif", fontSize:11, fontWeight:700, color:selected.color, marginBottom:6, textTransform:'uppercase', letterSpacing:1.5 }}>{ui.chefTip}</div>
-                    <div style={{ fontFamily:"'Source Sans 3',sans-serif", fontSize:14, color:'#3a2810', lineHeight:1.7 }}>{rv.tip}</div>
+                  <div style={{ background:'#fffbf0', border:'1px solid #f0e0a0', borderRadius:16, padding:'16px 20px', marginBottom:20 }}>
+                    <div style={{ fontSize:12, fontWeight:700, color:'#c8952a', marginBottom:6, textTransform:'uppercase', letterSpacing:1 }}>💡 {ui.chefTip}</div>
+                    <div style={{ fontSize:14, color:'#5a4a1a', lineHeight:1.7 }}>{rv.tip}</div>
                   </div>
                 )}
 
-                {/* Other language preview */}
+                {/* Other language */}
                 {otherV && (
-                  <div style={{ background:'#f4f1ec', borderRadius:12, padding:'16px 20px' }}>
-                    <div style={{ fontFamily:"'Source Sans 3',sans-serif", fontSize:11, fontWeight:700, color:'#9a8060', marginBottom:10, textTransform:'uppercase', letterSpacing:1.5 }}>
+                  <div className="other-lang-block">
+                    <div style={{ fontSize:11, fontWeight:700, color:'#aaa', textTransform:'uppercase', letterSpacing:1.5, marginBottom:10 }}>
                       {lang==='de'?'🇫🇷 En français':'🇩🇪 Auf Deutsch'}
                     </div>
-                    <div style={{ fontFamily:"'Playfair Display',serif", fontSize:16, fontWeight:700, color:'#3a2010', marginBottom:6 }}>{otherV.title}</div>
-                    <div style={{ fontFamily:"'Source Sans 3',sans-serif", fontSize:13, color:'#6a5040', lineHeight:1.6 }}>{otherV.description}</div>
+                    <div style={{ fontFamily:"'DM Serif Display',serif", fontSize:17, color:'#1a1a1a', marginBottom:6 }}>{otherV.title}</div>
+                    <div style={{ fontSize:13, color:'#777', lineHeight:1.6 }}>{otherV.description}</div>
                   </div>
                 )}
 
-                <div style={{ marginTop:18, fontSize:12, color:'#baa888', fontFamily:"'Source Sans 3',sans-serif", textAlign:'right' }}>
+                <div style={{ marginTop:20, fontSize:11, color:'#ccc', textAlign:'right' }}>
                   {ui.publishedLabel} {fmtDate(selected.publishedAt, ui.locale)}
                 </div>
               </div>
