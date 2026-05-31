@@ -203,7 +203,7 @@ Write a complete recipe in German and French. Return ONLY this JSON:
 
       // Fetch food photo from Unsplash
       const photoQuery = encodeURIComponent((data.de?.title || topic.query) + ' food dish')
-      const photoUrl = \`https://source.unsplash.com/800x600/?\${photoQuery}\`
+      const photoUrl = `https://source.unsplash.com/800x600/?${photoQuery}`
 
       const newRecipe = {
         id: Date.now(),
