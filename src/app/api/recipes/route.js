@@ -19,13 +19,28 @@ async function kvLPush(key, value) {
   return res.json()
 }
 
+function parseItem(item) {
+  try {
+    // item может быть строкой, массивом или объектом
+    if (typeof item === 'string') {
+      const parsed = JSON.parse(item)
+      // если распарсилось в массив — берём первый элемент
+      if (Array.isArray(parsed)) return parseItem(parsed[0])
+      return parsed
+    }
+    if (Array.isArray(item)) return parseItem(item[0])
+    if (typeof item === 'object' && item !== null) return item
+    return null
+  } catch {
+    return null
+  }
+}
+
 export async function GET() {
   try {
     if (!KV_URL || !KV_TOKEN) return Response.json({ recipes: [], error: 'DB not configured' })
     const items = await kvLRange('recipes', 0, 199)
-    const recipes = items.map(item => {
-      try { return typeof item === 'string' ? JSON.parse(item) : item } catch { return null }
-    }).filter(Boolean)
+    const recipes = items.map(parseItem).filter(r => r && r.de && r.fr)
     return Response.json({ recipes })
   } catch (e) {
     return Response.json({ recipes: [], error: e.message })
