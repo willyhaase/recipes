@@ -674,7 +674,7 @@ Write a complete recipe in German and French. Return ONLY this JSON:
         )
       })()}
     <Footer lang={lang} />
-      <Footer lang={lang} />
+      
     </div>
   )
 }
