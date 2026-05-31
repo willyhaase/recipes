@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import RecipeContent from './RecipeContent'
+import Footer from '../../components/Footer'
 
 const KV_URL = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL
 const KV_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN
@@ -94,14 +95,14 @@ export default async function RecipePage({ params }) {
           ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#ccc;border-radius:2px}
         `}</style>
 
-        {/* Header */}
-        <header style={{ background: '#fff', borderBottom: '1px solid #ede9e3', padding: '0 32px', boxShadow: '0 2px 12px rgba(0,0,0,.04)', position: 'sticky', top: 0, zIndex: 50 }}>
-          <div style={{ maxWidth: 900, margin: '0 auto', display: 'flex', alignItems: 'center', height: 64, justifyContent: 'space-between' }}>
-            <a href="/" style={{ fontFamily: "'DM Serif Display',serif", fontSize: 22, color: '#1a1a1a', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 32, height: 32, background: 'linear-gradient(135deg,#2d6a4f,#40916c)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>🍽</div>
+        {/* Header handled by RecipeContent for lang awareness */}
+        <header style={{ background:'#fff', borderBottom:'1px solid #f0ede8', position:'sticky', top:0, zIndex:50, boxShadow:'0 2px 12px rgba(0,0,0,.04)' }}>
+          <div style={{ maxWidth:900, margin:'0 auto', padding:'0 32px', display:'flex', alignItems:'center', height:64, justifyContent:'space-between' }}>
+            <a href="/" style={{ fontFamily:"'DM Serif Display',serif", fontSize:22, color:'#1a1a1a', textDecoration:'none', display:'flex', alignItems:'center', gap:10 }}>
+              <div style={{ width:32, height:32, background:'linear-gradient(135deg,#2d6a4f,#40916c)', borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16 }}>🍽</div>
               Gourmondo
             </a>
-            <a href="/" style={{ display:'inline-flex', alignItems:'center', gap:8, color:'#6a5040', textDecoration:'none', fontSize:14, fontWeight:500 }}>
+            <a href="/" style={{ fontFamily:"'DM Sans',sans-serif", fontSize:14, fontWeight:500, color:'#777', textDecoration:'none', display:'flex', alignItems:'center', gap:6 }}>
               ← Alle Rezepte / Toutes les recettes
             </a>
           </div>
@@ -120,6 +121,7 @@ export default async function RecipePage({ params }) {
             </a>
           </div>
         </main>
+        <Footer lang="de" />
       </div>
     </>
   )
