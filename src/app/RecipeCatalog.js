@@ -201,9 +201,16 @@ Write a complete recipe in German and French. Return ONLY this JSON:
       if (!Array.isArray(data.fr?.ingredients)) data.fr.ingredients = ['Ingrédients selon la recette']
       if (!Array.isArray(data.fr?.steps)) data.fr.steps = ['Préparer selon la méthode classique.']
 
-      // Fetch food photo from Unsplash
-      const photoQuery = encodeURIComponent((data.de?.title || topic.query) + ' food dish')
-      const photoUrl = `https://source.unsplash.com/800x600/?${photoQuery}`
+      // Fetch food photo via our API route (Pexels)
+      let photoUrl = ''
+      try {
+        const photoQuery = (data.de?.title || topic.query)
+        const photoRes = await fetch(`/api/photo?q=${encodeURIComponent(photoQuery)}`)
+        const photoData = await photoRes.json()
+        photoUrl = photoData.url || ''
+      } catch {
+        photoUrl = ''
+      }
 
       const newRecipe = {
         id: Date.now(),
@@ -578,7 +585,7 @@ Write a complete recipe in German and French. Return ONLY this JSON:
                   {/* Card image area */}
                   <div style={{ height:220, position:'relative', overflow:'hidden', background:'#e8e0d5', flexShrink:0 }}>
                     <img
-                      src={recipe.photo || `https://source.unsplash.com/800x600/?food,${encodeURIComponent(rv.title || 'food dish')}`}
+                      src={recipe.photo || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&fit=crop'}
                       alt={rv.title}
                       style={{ width:'100%', height:'100%', objectFit:'cover', display:'block', transition:'transform .5s ease' }}
                       onMouseEnter={e => e.currentTarget.style.transform='scale(1.07)'}
@@ -649,7 +656,7 @@ Write a complete recipe in German and French. Return ONLY this JSON:
               {/* Hero photo */}
               <div style={{ height:300, borderRadius:'24px 24px 0 0', position:'relative', overflow:'hidden', background:'#e8e0d5' }}>
                 <img
-                  src={selected.photo || `https://source.unsplash.com/900x600/?food,${encodeURIComponent(rv.title || 'food')}`}
+                  src={selected.photo || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&fit=crop'}
                   alt={rv.title}
                   style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}
                 />
