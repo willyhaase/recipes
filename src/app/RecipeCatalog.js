@@ -125,6 +125,16 @@ export default function RecipeCatalog() {
   const [searchFocused, setSearchFocused] = useState(false)
   const intervalRef = useRef(null)
   const logRef = useRef(null)
+  const [serverLoading, setServerLoading] = useState(true)
+
+  // Load recipes from server on mount
+  useEffect(() => {
+    fetch('/api/recipes')
+      .then(r => r.json())
+      .then(data => { if (data.recipes?.length) setRecipes(data.recipes) })
+      .catch(() => {})
+      .finally(() => setServerLoading(false))
+  }, [])
 
   const addLog = (msg, type='info') => {
     setLog(prev => [...prev.slice(-49), { msg, type, time: new Date().toLocaleTimeString(ui.locale) }])
@@ -191,16 +201,27 @@ Write a complete recipe in German and French. Return ONLY this JSON:
       if (!Array.isArray(data.fr?.ingredients)) data.fr.ingredients = ['Ingrédients selon la recette']
       if (!Array.isArray(data.fr?.steps)) data.fr.steps = ['Préparer selon la méthode classique.']
 
+      // Fetch food photo from Unsplash
+      const photoQuery = encodeURIComponent((data.de?.title || topic.query) + ' food dish')
+      const photoUrl = \`https://source.unsplash.com/800x600/?\${photoQuery}\`
+
       const newRecipe = {
         id: Date.now(),
         de: data.de, fr: data.fr,
         publishedAt: new Date().toISOString(),
         theme: genTheme(data.de?.title || topic.query),
         emoji: genEmoji(data.de?.title || topic.query),
+        photo: photoUrl,
         views: Math.floor(Math.random() * 500) + 50,
         likes: Math.floor(Math.random() * 80) + 5,
       }
       setRecipes(prev => [newRecipe, ...prev])
+      // Save to server
+      fetch('/api/recipes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newRecipe),
+      }).catch(() => {})
       addLog(`✅ «${data.de?.title}» / «${data.fr?.title}»`, 'success')
       setStatus(`${data.de?.title}`)
     } catch (err) {
@@ -555,29 +576,28 @@ Write a complete recipe in German and French. Return ONLY this JSON:
                 <div key={recipe.id} className="card card-appear" onClick={() => setSelected(recipe)}
                   style={{ boxShadow:'0 4px 20px rgba(0,0,0,.08)', animationDelay:`${idx * 0.05}s` }}>
                   {/* Card image area */}
-                  <div style={{ height:200, background: theme.bg, display:'flex', flexDirection:'column', justifyContent:'space-between', padding:'20px', position:'relative', overflow:'hidden' }}>
-                    {/* Decorative circle */}
-                    <div style={{ position:'absolute', right:-30, bottom:-30, width:160, height:160, borderRadius:'50%', background:'rgba(255,255,255,.08)' }} />
-                    <div style={{ position:'absolute', right:20, bottom:-20, width:100, height:100, borderRadius:'50%', background:'rgba(255,255,255,.06)' }} />
-
-                    {/* Top row */}
-                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
-                      <span style={{ background:'rgba(255,255,255,.2)', backdropFilter:'blur(4px)', color:'#fff', padding:'4px 12px', borderRadius:100, fontSize:11, fontWeight:600, letterSpacing:.5 }}>
+                  <div style={{ height:220, position:'relative', overflow:'hidden', background:'#e8e0d5', flexShrink:0 }}>
+                    <img
+                      src={recipe.photo || `https://source.unsplash.com/800x600/?food,${encodeURIComponent(rv.title || 'food dish')}`}
+                      alt={rv.title}
+                      style={{ width:'100%', height:'100%', objectFit:'cover', display:'block', transition:'transform .5s ease' }}
+                      onMouseEnter={e => e.currentTarget.style.transform='scale(1.07)'}
+                      onMouseLeave={e => e.currentTarget.style.transform='scale(1)'}
+                      loading="lazy"
+                    />
+                    <div style={{ position:'absolute', inset:0, background:'linear-gradient(to top, rgba(0,0,0,.6) 0%, rgba(0,0,0,.05) 55%, transparent 100%)' }} />
+                    {/* Top badges */}
+                    <div style={{ position:'absolute', top:14, left:14, right:14, display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+                      <span style={{ background:'rgba(255,255,255,.93)', backdropFilter:'blur(8px)', color:'#1a1a1a', padding:'4px 12px', borderRadius:100, fontSize:11, fontWeight:700 }}>
                         {rv.category}
                       </span>
                       <div style={{ display:'flex', gap:4 }}>
-                        <span style={{ fontSize:10, color:'rgba(255,255,255,.7)', background:'rgba(0,0,0,.15)', borderRadius:4, padding:'2px 6px', fontWeight:600 }}>DE</span>
-                        <span style={{ fontSize:10, color:'rgba(255,255,255,.7)', background:'rgba(0,0,0,.15)', borderRadius:4, padding:'2px 6px', fontWeight:600 }}>FR</span>
+                        <span style={{ fontSize:10, color:'#fff', background:'rgba(0,0,0,.4)', borderRadius:4, padding:'3px 7px', fontWeight:700, backdropFilter:'blur(4px)' }}>DE</span>
+                        <span style={{ fontSize:10, color:'#fff', background:'rgba(0,0,0,.4)', borderRadius:4, padding:'3px 7px', fontWeight:700, backdropFilter:'blur(4px)' }}>FR</span>
                       </div>
                     </div>
-
-                    {/* Emoji */}
-                    <div style={{ fontSize:64, textAlign:'center', filter:'drop-shadow(0 4px 8px rgba(0,0,0,.15))', lineHeight:1 }}>
-                      {recipe.emoji}
-                    </div>
-
                     {/* Bottom stats */}
-                    <div style={{ display:'flex', gap:8 }}>
+                    <div style={{ position:'absolute', bottom:14, left:14, display:'flex', gap:8 }}>
                       {rv.time && <span className="stat-chip">⏱ {rv.time} {ui.min}</span>}
                       {rv.servings && <span className="stat-chip">👥 {rv.servings} {ui.portions}</span>}
                     </div>
@@ -617,24 +637,30 @@ Write a complete recipe in German and French. Return ONLY this JSON:
         return (
           <div className="overlay" onClick={() => setSelected(null)}>
             <div className="modal" onClick={e => e.stopPropagation()}>
-              {/* Hero */}
-              <div className="modal-hero" style={{ background: theme.bg }}>
-                <div style={{ position:'absolute', right:-40, top:-40, width:200, height:200, borderRadius:'50%', background:'rgba(255,255,255,.07)' }} />
-                <div className="modal-emoji">{selected.emoji}</div>
+              {/* Hero photo */}
+              <div style={{ height:300, borderRadius:'24px 24px 0 0', position:'relative', overflow:'hidden', background:'#e8e0d5' }}>
+                <img
+                  src={selected.photo || `https://source.unsplash.com/900x600/?food,${encodeURIComponent(rv.title || 'food')}`}
+                  alt={rv.title}
+                  style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}
+                />
+                <div style={{ position:'absolute', inset:0, background:'linear-gradient(to top, rgba(0,0,0,.75) 0%, rgba(0,0,0,.1) 60%, transparent 100%)' }} />
                 <button onClick={() => setSelected(null)}
-                  style={{ position:'absolute', top:16, right:16, width:36, height:36, borderRadius:'50%', background:'rgba(0,0,0,.25)', border:'none', color:'#fff', fontSize:18, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
-                <div style={{ position:'absolute', bottom:16, left:20, display:'flex', gap:8 }}>
-                  {rv.time && <span className="stat-chip">⏱ {rv.time} {ui.min}</span>}
-                  {rv.servings && <span className="stat-chip">👥 {rv.servings} {ui.portions}</span>}
-                  {rv.difficulty && <span className="stat-chip" style={{ background: difficultyColor(rv.difficulty)+'44' }}>{rv.difficulty}</span>}
+                  style={{ position:'absolute', top:16, right:16, width:38, height:38, borderRadius:'50%', background:'rgba(0,0,0,.35)', border:'none', color:'#fff', fontSize:18, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', backdropFilter:'blur(4px)' }}>✕</button>
+                <div style={{ position:'absolute', bottom:0, left:0, right:0, padding:'24px 28px' }}>
+                  <div style={{ fontSize:11, color:'rgba(255,255,255,.7)', fontWeight:700, textTransform:'uppercase', letterSpacing:2, marginBottom:6 }}>{rv.category}</div>
+                  <h2 style={{ fontFamily:"'DM Serif Display',serif", fontSize:26, color:'#fff', lineHeight:1.2, marginBottom:10 }}>{rv.title}</h2>
+                  <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                    {rv.time && <span className="stat-chip">⏱ {rv.time} {ui.min}</span>}
+                    {rv.servings && <span className="stat-chip">👥 {rv.servings} {ui.portions}</span>}
+                    {rv.difficulty && <span className="stat-chip">{rv.difficulty}</span>}
+                  </div>
                 </div>
               </div>
 
               {/* Content */}
-              <div style={{ padding:'28px 32px 36px' }}>
-                <span style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1.5 }}>{rv.category}</span>
-                <h2 style={{ fontFamily:"'DM Serif Display',serif", fontSize:28, lineHeight:1.2, margin:'8px 0 6px', color:'#1a1a1a' }}>{rv.title}</h2>
-                <div style={{ fontSize:13, color:'#bbb', fontStyle:'italic', marginBottom:16 }}>
+              <div style={{ padding:'24px 32px 36px' }}>
+                <div style={{ fontSize:13, color:'#bbb', fontStyle:'italic', marginBottom:14 }}>
                   {lang==='de'?'🇫🇷':'🇩🇪'} {otherV?.title}
                 </div>
                 <p style={{ fontSize:15, color:'#555', lineHeight:1.75, marginBottom:28 }}>{rv.description}</p>
@@ -644,7 +670,7 @@ Write a complete recipe in German and French. Return ONLY this JSON:
                 <div style={{ marginBottom:28 }}>
                   {(rv.ingredients||[]).map((ing,i) => (
                     <div key={i} className="ingredient-row">
-                      <span className="ingredient-dot" style={{ background: theme.bg.includes('#') ? theme.bg.split(',')[0].replace('linear-gradient(145deg, ','') : '#2d6a4f' }} />
+                      <span className="ingredient-dot" style={{ background: '#2d6a4f' }} />
                       {ing}
                     </div>
                   ))}
