@@ -614,12 +614,21 @@ Write a complete recipe in German and French. Return ONLY this JSON:
                     <p style={{ fontSize:13, color:'#777', lineHeight:1.6, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden', marginBottom:14 }}>
                       {rv.description}
                     </p>
-                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
                       <span style={{ fontSize:12, fontWeight:600, color: difficultyColor(rv.difficulty) }}>
                         {rv.difficulty}
                       </span>
                       <span style={{ fontSize:11, color:'#ccc' }}>{fmtDate(recipe.publishedAt, ui.locale)}</span>
                     </div>
+                    <a
+                      href={`/recipe/${recipe.id}`}
+                      onClick={e => e.stopPropagation()}
+                      style={{ display:'block', textAlign:'center', padding:'8px', borderRadius:8, background:'#f5f3ee', fontSize:12, fontWeight:600, color:'#2d6a4f', textDecoration:'none', transition:'background .2s' }}
+                      onMouseEnter={e => e.currentTarget.style.background='#e8f5ee'}
+                      onMouseLeave={e => e.currentTarget.style.background='#f5f3ee'}
+                    >
+                      {lang === 'de' ? 'Rezept öffnen →' : 'Voir la recette →'}
+                    </a>
                   </div>
                 </div>
               )
