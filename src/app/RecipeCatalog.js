@@ -172,7 +172,22 @@ export default function RecipeCatalog() {
 
   const publishOneRecipe = async () => {
     if (loading) return
-    const topic = TOPICS[Math.floor(Math.random() * TOPICS.length)]
+
+    // Pick a topic not yet published — avoid duplicates
+    const available = TOPICS.filter(t => !recipes.some(r =>
+      r.de?.title?.toLowerCase().includes(t.query.split(' ')[0].toLowerCase()) ||
+      r.fr?.title?.toLowerCase().includes(t.query.split(' ')[0].toLowerCase())
+    ))
+
+    if (available.length === 0) {
+      addLog('✅ Alle Themen veröffentlicht / Tous les sujets publiés!', 'success')
+      clearInterval(intervalRef.current)
+      setAutoPublishing(false)
+      setLoading(false)
+      return
+    }
+
+    const topic = available[Math.floor(Math.random() * available.length)]
     setLoading(true)
     addLog(`🔍 ${topic.query}...`, 'search')
     setStatus(topic.query)
