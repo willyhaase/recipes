@@ -53,8 +53,7 @@ export default function Footer({ lang = 'de' }) {
               {links[lang].map(link => (
                 <a key={link.label} href={link.href}
                   style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 14, color: '#666', textDecoration: 'none', transition: 'color .2s' }}
-                  onMouseEnter={e => e.target.style.color = '#1a1a1a'}
-                  onMouseLeave={e => e.target.style.color = '#666'}>
+>
                   {link.label}
                 </a>
               ))}
