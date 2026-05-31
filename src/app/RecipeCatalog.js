@@ -1,5 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
+import Header from './components/Header'
+import Footer from './components/Footer'
 
 const UI = {
   de: {
@@ -142,6 +144,7 @@ export default function RecipeCatalog() {
   }
 
   const switchLang = (l) => { setLang(l); setActiveCat('ALL'); setSearchQuery('') }
+  const handleCategoryChange = (cat) => { setActiveCat(cat); setSearchQuery('') }
   const r = (recipe) => recipe?.[lang] || {}
 
   const callClaude = async (prompt, useSearch = false) => {
@@ -456,60 +459,13 @@ Write a complete recipe in German and French. Return ONLY this JSON:
       `}</style>
 
       {/* ── HEADER ── */}
-      <header style={{ background:'#fff', borderBottom:'1px solid #ede9e3', position:'sticky', top:0, zIndex:50, boxShadow:'0 2px 20px rgba(0,0,0,.04)' }}>
-        <div style={{ maxWidth:1280, margin:'0 auto', padding:'0 32px' }}>
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', height:68, gap:20 }}>
-
-            {/* Logo */}
-            <div style={{ display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
-              <div style={{ width:36, height:36, background:'linear-gradient(135deg,#2d6a4f,#40916c)', borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>🍽</div>
-              <span style={{ fontFamily:"'DM Serif Display',serif", fontSize:24, color:'#1a1a1a', letterSpacing:'-0.5px' }}>{ui.siteName}</span>
-            </div>
-
-            {/* Search */}
-            <div className="search-wrap" style={{ flex:1, maxWidth:480 }}>
-              <span className="search-icon">🔍</span>
-              <input
-                className="search-input"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setSearchFocused(false)}
-                placeholder={ui.searchPlaceholder}
-              />
-            </div>
-
-            {/* Right controls */}
-            <div style={{ display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
-              {/* Lang switcher */}
-              <div style={{ display:'flex', background:'#f0ede8', borderRadius:100, padding:3, gap:2 }}>
-                {['de','fr'].map(l => (
-                  <button key={l} className="langbtn" onClick={() => switchLang(l)}
-                    style={{ padding:'6px 14px', borderRadius:100, fontSize:13, fontWeight:600, background: lang===l?'#fff':'transparent', color: lang===l?'#1a1a1a':'#888', boxShadow: lang===l?'0 1px 4px rgba(0,0,0,.1)':'none' }}>
-                    {l==='de'?'🇩🇪 DE':'🇫🇷 FR'}
-                  </button>
-                ))}
-              </div>
-
-              {recipes.length > 0 && (
-                <span style={{ background:'#f0ede8', color:'#555', padding:'6px 14px', borderRadius:100, fontSize:13, fontWeight:500 }}>
-                  {recipes.length} {ui.recipes}
-                </span>
-              )}
-
-              <button className="pub-btn" onClick={() => setShowPanel(!showPanel)}
-                style={{ background:'#f0ede8', color:'#555', padding:'8px 16px', fontSize:13 }}>
-                ⚙️ {showPanel ? ui.hidePanel : ui.panel}
-              </button>
-
-              <button className="pub-btn" onClick={toggleAuto}
-                style={{ background: autoPublishing ? '#e63946':'#2d6a4f', color:'#fff', boxShadow: autoPublishing?'0 4px 16px rgba(230,57,70,.35)':'0 4px 16px rgba(45,106,79,.35)' }}>
-                {autoPublishing ? <>⏹ {ui.stop}</> : <>▶ {ui.autoPublish}</>}
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header
+        lang={lang}
+        onLangChange={switchLang}
+        onSearch={setSearchQuery}
+        onCategoryChange={handleCategoryChange}
+        activeCategory={activeCat}
+      />
 
       {/* ── PUBLISH PANEL ── */}
       {showPanel && (
@@ -536,38 +492,10 @@ Write a complete recipe in German and French. Return ONLY this JSON:
       )}
 
       {/* ── HERO + CATEGORIES ── */}
-      <div style={{ background:'#fff', borderBottom:'1px solid #ede9e3', padding:'24px 32px 0' }}>
+      <div style={{ background:'#faf8f5', borderBottom:'1px solid #f0ede8', padding:'32px 32px 24px' }}>
         <div style={{ maxWidth:1280, margin:'0 auto' }}>
-          {/* Title row */}
-          {!searchQuery && (
-            <div style={{ marginBottom:20 }}>
-              <h1 style={{ fontFamily:"'DM Serif Display',serif", fontSize:36, color:'#1a1a1a', lineHeight:1.15, letterSpacing:'-0.5px' }}>
-                {ui.tagline}
-              </h1>
-              {recipes.length > 0 && (
-                <p style={{ fontSize:14, color:'#999', marginTop:4, fontWeight:400 }}>
-                  {filtered.length} {ui.recipes}
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Category pills */}
-          <div style={{ display:'flex', gap:8, overflowX:'auto', paddingBottom:0, scrollbarWidth:'none' }}>
-            <button className="catpill" onClick={() => setActiveCat('ALL')}
-              style={{ background: activeCat==='ALL' ? '#1a1a1a':'#f0ede8', color: activeCat==='ALL'?'#fff':'#555' }}>
-              {ui.allCat}
-            </button>
-            {allCats.map((cat, i) => (
-              <button key={cat} className="catpill" onClick={() => setActiveCat(cat)}
-                style={{ background: activeCat===cat?'#1a1a1a':'#f0ede8', color: activeCat===cat?'#fff':'#555' }}>
-                {UI[lang].catIcons[i]} {cat}
-              </button>
-            ))}
-          </div>
-
-          {/* Active filter underline */}
-          <div style={{ height:3, background:'#f5f3ee', marginTop:0 }} />
+          <h1 style={{ fontFamily:"'DM Serif Display',serif", fontSize:38, lineHeight:1.15, letterSpacing:'-0.5px', color:'#1a1a1a', marginBottom:6 }}>{ui.tagline}</h1>
+          {recipes.length > 0 && <p style={{ fontSize:14, color:'#aaa', fontFamily:"'DM Sans',sans-serif" }}>{filtered.length} {ui.recipes}</p>}
         </div>
       </div>
 
@@ -745,6 +673,8 @@ Write a complete recipe in German and French. Return ONLY this JSON:
           </div>
         )
       })()}
+    <Footer lang={lang} />
+      <Footer lang={lang} />
     </div>
   )
 }
